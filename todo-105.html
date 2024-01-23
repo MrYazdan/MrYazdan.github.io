@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title>Maktab 105 | JS</title>
+</head>
+<body>
+<section class="w-full">
+    <header class="mx-auto w-11/12 xl:w-6/12 mt-20 grid grid-cols-10 gap-1">
+        <input type="text" name="title" id="title" class="border border-gray-300 rounded p-4 col-span-5 block"
+               placeholder="Todo title">
+        <input type="date" name="date" id="date" class="border border-gray-300 rounded p-4 col-span-4 block"
+               placeholder="mm/dd/yy">
+        <button onclick="addTask()" id="add"
+                class="border border-gray-300 rounded p-4 col-span-1 block bg-green-600 text-white hover:bg-green-700 duration-300">
+            Sub
+        </button>
+    </header>
+    <main class="mx-auto w-11/12 xl:w-6/12 py-16 grid gap-4 xl:gap-16 grid-cols-3 rounded">
+        <!-- Task -->
+        <div class="bg-[#ADD8E6] p-6 pb-2 rounded-md">
+            <h3 class="text-center pb-4 text-xl">Tasks</h3>
+            <div id="tasks"></div>
+        </div>
+
+        <!-- Doing -->
+        <div class="bg-[#F5F0B3] p-6 pb-2 rounded-md">
+            <h3 class="text-center pb-4 text-xl">Doing</h3>
+            <div id="doing"></div>
+        </div>
+
+        <!-- Done -->
+        <div class="bg-[#90EE90] p-6 pb-2 rounded-md">
+            <h3 class="text-center pb-4 text-xl">Completed</h3>
+            <div id="done"></div>
+        </div>
+    </main>
+</section>
+
+<script>
+    const tasks = document.getElementById('tasks');
+    const doing = document.getElementById('doing');
+    const done = document.getElementById('done');
+
+    // keys
+    function counter() {
+        return localStorage.getItem('counter') || '0'
+    }
+
+    function getTasks() {
+        // Database
+        const db = localStorage.getItem('tasks') || "[]";
+        return JSON.parse(db);
+    }
+
+    function taskCreator(title, date, id) {
+        return `
+            <div id="t${id}" class="relative bg-white p-4 rounded-sm mb-4">
+                <strong class="text-left block">${title}</strong>
+                <button onclick="deleteTask(this)" class="text-xl absolute top-2 right-4 text-red-500 hover:text-red-700 duration-300">×</button>
+                <span class="block my-4"><b>date</b>: ${date}</span>
+                <div class="flex flex-row justify-between">
+                    <button onclick="move(this, 'tasks')" class="block rounded-xl text-center text-xl w-10 h-10 text-black pt-1 bg-[#ADD8E6]/80 hover:bg-[#ADD8E6] duration-300 text-black">−</button>
+                    <button onclick="move(this, 'doing')" class="block rounded-xl text-center text-xl w-10 h-10 text-black pt-1 bg-[#ADD8E6]/80 hover:bg-[#ADD8E6] duration-300 text-black">🛈</button>
+                    <button onclick="move(this, 'done')" class="block rounded-xl text-center text-xl w-10 h-10 text-black pt-1 bg-[#ADD8E6]/80 hover:bg-[#ADD8E6] duration-300 text-black">✓</button>
+                </div>
+            </div>`
+    }
+
+    function addTask() {
+        const title = document.getElementById('title').value;
+        const date = document.getElementById('date').value;
+
+        if (!(title && date)) {
+            Swal.fire({
+                title: "Error !",
+                text: "Please fill in all fields",
+                icon: "error"
+            });
+            return 0;
+        }
+
+        // Save to DB
+        const db_tasks = getTasks();
+        db_tasks.push({title, date, mode: 'tasks', id: counter()});
+        localStorage.setItem('tasks', JSON.stringify(db_tasks));
+        localStorage.setItem('counter', String(+counter() + 1));
+
+        // Create task
+        tasks.innerHTML += taskCreator(title, date, String(counter()));
+    }
+
+    function deleteTask(el) {
+        Swal.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                el.parentNode.remove();
+
+                Swal.fire({
+                    title: "Deleted!",
+                    text: "Your file has been deleted.",
+                    icon: "success"
+                });
+
+                // Save to DB
+                const tasks = getTasks()
+                for (const task of tasks) {
+                    if (el.parentNode.id === "t" + task.id) {
+                        tasks.splice(tasks.indexOf(task), 1);
+                        break
+                    }
+                }
+
+                localStorage.setItem('tasks', JSON.stringify(tasks))
+            }
+        });
+    }
+
+    function move(el, target) {
+        el = el.parentNode.parentNode;
+        el.remove();
+
+        if (target === "tasks") {
+            tasks.appendChild(el)
+        } else if (target === "doing") {
+            doing.appendChild(el)
+        } else if (target === "done") {
+            done.appendChild(el)
+        } else {
+            Swal.fire({
+                title: "Error !",
+                text: "Target (mode) not valid !",
+                icon: "error"
+            });
+
+            return 0;
+        }
+
+        // Save to DB
+        const db_tasks = getTasks()
+        for (const task of db_tasks) {
+            if (el.id === "t" + task.id) {
+                task.mode = target;
+                break;
+            }
+        }
+
+        localStorage.setItem('tasks', JSON.stringify(db_tasks))
+    }
+
+
+    // Loader
+    if (getTasks().length > 0) {
+        getTasks().forEach(task => {
+            if (task.mode === 'tasks') {
+                tasks.innerHTML += taskCreator(task.title, task.date, task.id);
+            } else if (task.mode === 'doing') {
+                doing.innerHTML += taskCreator(task.title, task.date, task.id);
+            } else if (task.mode === 'done') {
+                done.innerHTML += taskCreator(task.title, task.date, task.id);
+            } else {
+                Swal.fire({
+                    title: "Error !",
+                    text: `Mode in db not valid ! ( task id: ${task.id} )`,
+                    icon: "error"
+                })
+            }
+        });
+    }
+
+</script>
+</body>
+</html>
