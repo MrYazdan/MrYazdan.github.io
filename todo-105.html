@@ -7,7 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <title>Maktab 105 | JS</title>
+    <title>Document</title>
 </head>
 <body>
 <section class="w-full">
@@ -92,7 +92,7 @@
         localStorage.setItem('counter', String(+counter() + 1));
 
         // Create task
-        tasks.innerHTML += taskCreator(title, date, String(counter()));
+        tasks.innerHTML += taskCreator(title, date, String(+counter()-1));
     }
 
     function deleteTask(el) {
@@ -115,15 +115,15 @@
                 });
 
                 // Save to DB
-                const tasks = getTasks()
-                for (const task of tasks) {
+                const db_tasks = getTasks()
+                for (const task of db_tasks) {
                     if (el.parentNode.id === "t" + task.id) {
-                        tasks.splice(tasks.indexOf(task), 1);
+                        db_tasks.splice(db_tasks.indexOf(task), 1);
                         break
                     }
                 }
 
-                localStorage.setItem('tasks', JSON.stringify(tasks))
+                localStorage.setItem('tasks', JSON.stringify(db_tasks))
             }
         });
     }
@@ -132,6 +132,18 @@
         el = el.parentNode.parentNode;
         el.remove();
 
+        // Save to DB
+        const db_tasks = getTasks()
+        for (const task of db_tasks) {
+            console.log(el.id , task.id)
+            if (el.id === "t" + task.id) {
+                task.mode = target;
+                break;
+            }
+        }
+        localStorage.setItem('tasks', JSON.stringify(db_tasks))
+
+        // Move
         if (target === "tasks") {
             tasks.appendChild(el)
         } else if (target === "doing") {
@@ -148,16 +160,6 @@
             return 0;
         }
 
-        // Save to DB
-        const db_tasks = getTasks()
-        for (const task of db_tasks) {
-            if (el.id === "t" + task.id) {
-                task.mode = target;
-                break;
-            }
-        }
-
-        localStorage.setItem('tasks', JSON.stringify(db_tasks))
     }
 
 
